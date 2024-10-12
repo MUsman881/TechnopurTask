@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TechnopurTask.Data;
-using TechnopurTask.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 

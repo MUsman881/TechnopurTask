@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TechnopurTask.Data;
 using TechnopurTask.Models;
 
 namespace TechnopurTask.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class ProductsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -19,7 +20,6 @@ namespace TechnopurTask.Controllers
 
         // GET: api/Products
         [HttpGet]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
         {
             return await _context.Products.ToListAsync();
@@ -27,7 +27,6 @@ namespace TechnopurTask.Controllers
 
         // GET: api/Products/5
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<ActionResult<Product>> GetProduct(Guid id)
         {
             var product = await _context.Products.FindAsync(id);
@@ -41,45 +40,40 @@ namespace TechnopurTask.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProduct(Guid id, Product product)
+        public async Task<IActionResult> PutProduct(Guid id, CreateOrUpdateProduct product)
         {
-            if (id != product.Id)
+            if (product is null)
             {
-                return BadRequest("Product ID mismatch.");
+                return NotFound("Product not found!");
             }
 
-            _context.Entry(product).State = EntityState.Modified;
+            var updatedProduct = _context.Products.Where(p => p.Id == id).FirstOrDefault();
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!ProductExists(id))
-                {
-                    return NotFound("Product not found.");
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            updatedProduct.Price = product.Price;
+            updatedProduct.Name = product.Name;
+
+            _context.Products.Update(updatedProduct);
+            await _context.SaveChangesAsync();
 
             return Ok("Product updated successfully.");
         }
 
         [HttpPost]
-        public async Task<ActionResult<Product>> PostProduct(Product product)
+        public async Task<ActionResult<Product>> PostProduct(CreateOrUpdateProduct product)
         {
-            _context.Products.Add(product);
+            var newProduct = new Product
+            {
+                Name = product.Name,
+                Price = product.Price
+            };
+
+            _context.Products.Add(newProduct);
             await _context.SaveChangesAsync();
 
             return Ok("Product Saved successfully.");
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteProduct(Guid id)
         {
             var product = await _context.Products.FindAsync(id);
